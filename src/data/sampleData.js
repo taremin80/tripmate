@@ -1,0 +1,80 @@
+export const trips = [
+  {
+    id: 1,
+    title: '오사카 · 교토',
+    location: '일본',
+    coverColor: '#5B4FCF',
+    startDate: '2025-06-03',
+    endDate: '2025-06-07',
+    status: 'upcoming',
+    members: [
+      { id: 1, name: '나', initials: '나', color: '#EEEDFE', textColor: '#3D35A0' },
+      { id: 2, name: '이지수', initials: '지', color: '#E1F5EE', textColor: '#0F6E56' },
+      { id: 3, name: '박현서', initials: '현', color: '#FAEEDA', textColor: '#854F0B' },
+    ],
+    schedules: [
+      { id: 1, date: '2025-06-03', time: '08:30', title: '인천 → 오사카 출발', note: 'OZ111 · T1 3시간 전 도착', category: 'flight' },
+      { id: 2, date: '2025-06-03', time: '11:40', title: '도톤보리 점심', note: '이치란 라멘 — 11:30까지 도착!', category: 'food' },
+      { id: 3, date: '2025-06-03', time: '14:00', title: '오사카성 관광', note: '입장료 ¥600 · 약 2시간', category: 'sightseeing' },
+      { id: 4, date: '2025-06-04', time: '09:00', title: 'USJ 유니버설 스튜디오', note: '1일권 3매 — QR 예약완료', category: 'activity' },
+      { id: 5, date: '2025-06-05', time: '10:00', title: '교토 이동 (신칸센)', note: '약 15분', category: 'transport' },
+      { id: 6, date: '2025-06-05', time: '14:00', title: '후시미 이나리 신사', note: '천 개의 도리이 — 일몰 전 방문 추천', category: 'sightseeing' },
+    ],
+    bookings: [
+      { id: 1, category: 'flight', title: '아시아나 OZ111', detail: '6/3 ICN → KIX 08:30', subDetail: '예약번호 ABCD12 · 3인', status: 'confirmed' },
+      { id: 2, category: 'hotel', title: '도톤보리 게스트하우스', detail: '6/3 — 6/5 체크인/아웃', subDetail: '트윈룸 2개 · ¥18,000/박', status: 'confirmed' },
+      { id: 3, category: 'hotel', title: '교토 료칸 사쿠라', detail: '6/5 — 6/7 체크인/아웃', subDetail: '조식포함 · 확인 메일 대기중', status: 'pending' },
+      { id: 4, category: 'activity', title: 'USJ 입장권', detail: '6/4 · 1일권 3매', subDetail: 'QR 티켓 첨부됨', status: 'confirmed' },
+    ],
+    expenses: [
+      { id: 1, category: 'flight', title: '항공권', amount: 420000, paidBy: 2, date: '2025-05-10' },
+      { id: 2, category: 'hotel', title: '숙소 (도톤보리)', amount: 180000, paidBy: 1, date: '2025-05-12' },
+      { id: 3, category: 'food', title: '이치란 라멘', amount: 54000, paidBy: 3, date: '2025-06-03' },
+      { id: 4, category: 'activity', title: 'USJ 입장권', amount: 188000, paidBy: 2, date: '2025-05-20' },
+    ],
+    notices: [
+      { id: 1, title: '준비물 체크리스트', content: '여권, 엔화 환전 (1인당 15만원 권장), 여행자 보험 가입 확인', author: '이지수', pinned: true, date: '2025-05-01' },
+      { id: 2, title: '집합 장소 안내', content: '6월 3일 오전 6시 인천공항 제1터미널 3층 출발층 H카운터 앞 집합', author: '나', pinned: false, date: '2025-05-15' },
+    ],
+    photos: [
+      { id: 1, url: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=400', caption: '도톤보리' },
+      { id: 2, url: 'https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=400', caption: '오사카성' },
+      { id: 3, url: 'https://images.unsplash.com/photo-1478436127897-769e1b3f0f36?w=400', caption: '후시미 이나리' },
+      { id: 4, url: 'https://images.unsplash.com/photo-1545569341-9eb8b30979d9?w=400', caption: '교토 거리' },
+    ],
+  },
+  {
+    id: 2,
+    title: '방콕 · 파타야',
+    location: '태국',
+    coverColor: '#0F9B8E',
+    startDate: '2025-03-10',
+    endDate: '2025-03-14',
+    status: 'done',
+    members: [
+      { id: 1, name: '나', initials: '나', color: '#EEEDFE', textColor: '#3D35A0' },
+      { id: 2, name: '이지수', initials: '지', color: '#E1F5EE', textColor: '#0F6E56' },
+    ],
+    schedules: [],
+    bookings: [],
+    expenses: [
+      { id: 1, category: 'flight', title: '항공권', amount: 380000, paidBy: 1, date: '2025-02-01' },
+      { id: 2, category: 'hotel', title: '숙소', amount: 220000, paidBy: 2, date: '2025-02-10' },
+      { id: 3, category: 'food', title: '식비 합계', amount: 120000, paidBy: 1, date: '2025-03-10' },
+      { id: 4, category: 'activity', title: '투어', amount: 122000, paidBy: 2, date: '2025-03-11' },
+    ],
+    notices: [],
+    photos: [],
+  },
+]
+
+export const categoryConfig = {
+  flight:      { label: '항공',   color: '#5B4FCF', bg: '#EEEDFE', icon: '✈️' },
+  hotel:       { label: '숙소',   color: '#0F9B8E', bg: '#E0F5F3', icon: '🏨' },
+  activity:    { label: '투어',   color: '#E07B39', bg: '#FEF3E8', icon: '🎫' },
+  food:        { label: '식사',   color: '#E07B39', bg: '#FEF3E8', icon: '🍜' },
+  transport:   { label: '교통',   color: '#3A9E6F', bg: '#E5F5EE', icon: '🚆' },
+  sightseeing: { label: '관광',   color: '#0F9B8E', bg: '#E0F5F3', icon: '🗺️' },
+  shopping:    { label: '쇼핑',   color: '#5B4FCF', bg: '#EEEDFE', icon: '🛍️' },
+  etc:         { label: '기타',   color: '#6B6B65', bg: '#F0EFEB', icon: '📌' },
+}
