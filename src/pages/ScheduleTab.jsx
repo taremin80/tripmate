@@ -1,43 +1,73 @@
 import React, { useState } from 'react'
 import { categoryConfig } from '../data/sampleData'
 
-const DATES = ['06/03', '06/04', '06/05', '06/06', '06/07']
-const DAYS  = ['화', '수', '목', '금', '토']
+function getDates(startDate, endDate) {
+  if (!startDate || !endDate) return []
+  const dates = []
+  const cur = new Date(startDate)
+  const end = new Date(endDate)
+  const DAY = ['일','월','화','수','목','금','토']
+  while (cur <= end) {
+    dates.push({
+      key: cur.toISOString().split('T')[0],
+      label: `${cur.getMonth()+1}/${cur.getDate()} (${DAY[cur.getDay()]})`
+    })
+    cur.setDate(cur.getDate() + 1)
+  }
+  return dates
+}
 
 function getDateKey(dateStr) {
-  const d = new Date(dateStr)
-  return `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`
+  return dateStr ? dateStr.split('T')[0] : ''
 }
 
 export default function ScheduleTab({ trip, onUpdate }) {
-  const [activeDate, setActiveDate] = useState(DATES[0])
+  const dates = getDates(trip.startDate, trip.endDate)
+  const [activeDate, setActiveDate] = useState(dates[0]?.key || '')
   const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState({ time:'', title:'', note:'', category:'sightseeing' })
 
-  const filtered = trip.schedules.filter(s => getDateKey(s.date) === activeDate)
+  const filtered = trip.schedules
+    .filter(s => getDateKey(s.date) === activeDate)
+    .sort((a, b) => (a.time || '').localeCompare(b.time || ''))
 
   function addSchedule() {
     if (!form.title) return
-    const dateStr = `2025-${activeDate.replace('/','-')}`
-    const updated = { ...trip, schedules: [...trip.schedules, { id: Date.now(), date: dateStr, ...form }] }
+    const updated = {
+      ...trip,
+      schedules: [...trip.schedules, { id: Date.now(), date: activeDate, ...form }]
+    }
     onUpdate(updated)
     setForm({ time:'', title:'', note:'', category:'sightseeing' })
     setShowModal(false)
   }
 
+  if (dates.length === 0) {
+    return (
+      <div style={{display:'flex',flexDirection:'column',flex:1}}>
+        <div className="app-header"><h1>일정</h1></div>
+        <div style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:8,color:'var(--gray-400)',padding:'20px'}}>
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <div style={{fontSize:14}}>여행 날짜를 설정해주세요</div>
+          <div style={{fontSize:12}}>설정 → 여행 관리에서 날짜를 입력하면 일정을 추가할 수 있어요</div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div style={{display:'flex',flexDirection:'column',flex:1}}>
       {/* 날짜 탭 */}
-      <div style={{display:'flex',background:'var(--white)',borderBottom:'1px solid var(--gray-200)',overflowX:'auto'}}>
-        {DATES.map((d,i) => (
-          <button key={d} onClick={() => setActiveDate(d)}
+      <div style={{display:'flex',background:'var(--white)',borderBottom:'1px solid var(--gray-200)',overflowX:'auto',flexShrink:0}}>
+        {dates.map(d => (
+          <button key={d.key} onClick={() => setActiveDate(d.key)}
             style={{
-              flex:'0 0 auto', padding:'10px 14px', fontSize:12, fontWeight:500,
-              color: activeDate===d ? 'var(--purple)' : 'var(--gray-400)',
-              borderBottom: activeDate===d ? '2px solid var(--purple)' : '2px solid transparent',
+              flex:'0 0 auto', padding:'10px 12px', fontSize:12, fontWeight:500,
+              color: activeDate===d.key ? 'var(--purple)' : 'var(--gray-400)',
+              borderBottom: activeDate===d.key ? '2px solid var(--purple)' : '2px solid transparent',
               background:'none', whiteSpace:'nowrap'
             }}>
-            {d} ({DAYS[i]})
+            {d.label}
           </button>
         ))}
       </div>
@@ -58,7 +88,7 @@ export default function ScheduleTab({ trip, onUpdate }) {
                 {idx < filtered.length-1 && <div className="timeline-line" />}
               </div>
               <div style={{flex:1,paddingBottom:16}}>
-                <div style={{fontSize:11,color:'var(--gray-400)',marginBottom:3}}>{item.time}</div>
+                <div style={{fontSize:11,color:'var(--gray-400)',marginBottom:3}}>{item.time || '시간 미정'}</div>
                 <div className="card" style={{marginBottom:0}}>
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:4}}>
                     <span style={{fontSize:13,fontWeight:600}}>{item.title}</span>
@@ -80,7 +110,7 @@ export default function ScheduleTab({ trip, onUpdate }) {
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal-sheet" onClick={e => e.stopPropagation()}>
-            <div className="modal-title">일정 추가 — {activeDate}</div>
+            <div className="modal-title">일정 추가 — {dates.find(d=>d.key===activeDate)?.label}</div>
             <div className="form-group">
               <label className="form-label">시간</label>
               <input className="form-input" type="time" value={form.time} onChange={e => setForm({...form,time:e.target.value})} />
