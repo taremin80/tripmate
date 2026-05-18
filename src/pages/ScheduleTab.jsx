@@ -438,11 +438,7 @@ export default function ScheduleTab({ trip, onUpdate }) {
                     <label className="form-label">시간</label>
                     <input className="form-input" type="time" value={form.time} onChange={e=>f({time:e.target.value})} />
                   </div>
-                  <div className="form-group" style={{flex:1}}>
-                    <label className="form-label">제목 *</label>
-                    <input className="form-input" placeholder="예: 이치란 라멘" value={form.title} onChange={e=>f({title:e.target.value})} />
-                  </div>
-                </div>
+                                 </div>
 
                 {/* 카테고리 선택 */}
                 <div className="form-group">
