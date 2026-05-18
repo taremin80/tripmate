@@ -19,9 +19,19 @@ function formatDateFull(s) {
 
 const DEFAULT_BG = ''
 
+function getEffectiveStatus(trip) {
+  if (trip.status === 'done') return 'done'
+  if (trip.endDate) {
+    const end = new Date(trip.endDate)
+    end.setHours(23, 59, 59)
+    if (end < new Date()) return 'done'
+  }
+  return 'upcoming'
+}
+
 export default function HomeScreen({ trips, onSelect, onAdd, onSettings }) {
-  const upcoming = trips.filter(t => t.status === 'upcoming')
-  const done = trips.filter(t => t.status === 'done')
+  const upcoming = trips.filter(t => getEffectiveStatus(t) === 'upcoming')
+  const done = trips.filter(t => getEffectiveStatus(t) === 'done')
   const totalExpenseAll = trips.reduce((s, t) => s + t.expenses.reduce((a, e) => a + e.amount, 0), 0)
 
   const [bgImage, setBgImage] = useState(() => localStorage.getItem('tripmate_hero_bg') || DEFAULT_BG)
@@ -208,8 +218,8 @@ function TripCard({ trip, onSelect }) {
               {trip.location}{trip.startDate ? ` · ${formatDate(trip.startDate, trip.endDate)} · ${nights}박${nights+1}일` : ''}
             </div>
           </div>
-          <span className={`badge ${trip.status==='upcoming'?'badge-purple':'badge-teal'}`}>
-            {trip.status==='upcoming' ? dd : '완료'}
+          <span className={`badge ${getEffectiveStatus(trip)==='upcoming'?'badge-purple':'badge-teal'}`}>
+            {getEffectiveStatus(trip)==='upcoming' ? dd : '완료'}
           </span>
         </div>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>

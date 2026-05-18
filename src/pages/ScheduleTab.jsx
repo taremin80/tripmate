@@ -50,10 +50,10 @@ const SECTION_TABS = [
 ]
 
 const EMPTY_FORM = {
-  time:'', title:'', category:'food',
+  time:'', category:'food',
   place:'', mapQuery:'', note:'',
   transportType:'subway', transportFrom:'', transportTo:'',
-  cost:'', currency:'KRW', exchangeRate:'',
+  cost:'', currency:'KRW', krwAmount:'',
   paidBy: null,
 }
 
@@ -92,23 +92,29 @@ function CurrencyBtns({ value, onChange }) {
   )
 }
 
-function AmountInput({ currency, value, onChange, exchangeRate, onRateChange }) {
+function AmountInput({ currency, value, onChange, krwAmount, onKrwChange }) {
   const sym = CURRENCIES.find(c=>c.code===currency)?.symbol||'₩'
-  const needsRate = currency!=='KRW'
-  const krw = needsRate&&value&&exchangeRate ? Math.round(Number(value)*Number(exchangeRate)) : null
+  const needsKRW = currency!=='KRW'
+  const rate = needsKRW&&value&&krwAmount ? (Number(krwAmount)/Number(value)).toFixed(2) : null
   return (
-    <div>
-      <div style={{display:'flex'}}>
-        <span style={{padding:'10px 10px',background:'var(--gray-100)',borderRadius:'8px 0 0 8px',fontSize:13,fontWeight:700,color:'var(--gray-600)',border:'1px solid var(--gray-200)',borderRight:'none'}}>{sym}</span>
-        <input className="form-input" type="number" placeholder="0" style={{borderRadius:'0 8px 8px 0'}}
-          value={value} onChange={e=>onChange(e.target.value)} />
+    <div style={{display:'flex',flexDirection:'column',gap:8}}>
+      <div>
+        <label className="form-label">{needsKRW ? sym+' 금액 (현지 통화)' : '금액'}</label>
+        <div style={{display:'flex'}}>
+          <span style={{padding:'10px 10px',background:'var(--gray-100)',borderRadius:'8px 0 0 8px',fontSize:13,fontWeight:700,color:'var(--gray-600)',border:'1px solid var(--gray-200)',borderRight:'none'}}>{sym}</span>
+          <input className="form-input" type="number" placeholder="0" style={{borderRadius:'0 8px 8px 0'}}
+            value={value} onChange={e=>onChange(e.target.value)} />
+        </div>
       </div>
-      {needsRate&&value&&(
-        <div style={{marginTop:6}}>
-          <label className="form-label">환율 (1{sym} = ?원)</label>
-          <input className="form-input" type="number" placeholder="예: 9.5 (엔), 1350 (달러)"
-            value={exchangeRate} onChange={e=>onRateChange(e.target.value)} />
-          {krw&&<div style={{fontSize:11,color:'var(--purple)',marginTop:4,fontWeight:600}}>≈ ₩{krw.toLocaleString()}</div>}
+      {needsKRW&&value&&(
+        <div>
+          <label className="form-label">₩ 원화 금액 (실제 결제 금액)</label>
+          <div style={{display:'flex'}}>
+            <span style={{padding:'10px 10px',background:'#EEEDFE',borderRadius:'8px 0 0 8px',fontSize:13,fontWeight:700,color:'var(--purple)',border:'1px solid #D4D0F5',borderRight:'none'}}>₩</span>
+            <input className="form-input" type="number" placeholder="예: 12500" style={{borderRadius:'0 8px 8px 0'}}
+              value={krwAmount} onChange={e=>onKrwChange(e.target.value)} />
+          </div>
+          {rate&&krwAmount&&<div style={{fontSize:11,color:'var(--gray-400)',marginTop:4}}>적용 환율: 1{sym} = ₩{rate}</div>}
         </div>
       )}
     </div>
@@ -147,7 +153,7 @@ function CategoryFields({ form, f, members }) {
           </div>
           <label className="form-label">교통비</label>
           <CurrencyBtns value={form.currency} onChange={v=>f({currency:v,exchangeRate:''})} />
-          <AmountInput currency={form.currency} value={form.cost} onChange={v=>f({cost:v})} exchangeRate={form.exchangeRate} onRateChange={v=>f({exchangeRate:v})} />
+          <AmountInput currency={form.currency} value={form.cost} onChange={v=>f({cost:v})} krwAmount={form.krwAmount} onKrwChange={v=>f({krwAmount:v})} />
         </div>
       )}
 
@@ -186,7 +192,7 @@ function CategoryFields({ form, f, members }) {
              cat.key==='shopping' ? '쇼핑 금액' : '금액'}
           </label>
           <CurrencyBtns value={form.currency} onChange={v=>f({currency:v,exchangeRate:''})} />
-          <AmountInput currency={form.currency} value={form.cost} onChange={v=>f({cost:v})} exchangeRate={form.exchangeRate} onRateChange={v=>f({exchangeRate:v})} />
+          <AmountInput currency={form.currency} value={form.cost} onChange={v=>f({cost:v})} krwAmount={form.krwAmount} onKrwChange={v=>f({krwAmount:v})} />
         </div>
       )}
 
@@ -218,22 +224,30 @@ export default function ScheduleTab({ trip, onUpdate }) {
   const dayStays = (trip.stays||[]).filter(s=>s.checkIn&&s.checkOut&&s.checkIn<=activeDate&&s.checkOut>=activeDate)
 
   function addSchedule() {
-    if (!form.title) return
+    if (!form.category) return
     const cat = CATEGORIES.find(c=>c.key===form.category)||CATEGORIES[0]
     const newExpenses = [...(trip.expenses||[])]
     if (form.cost && cat.hasCost) {
       const tt = TRANSPORT_TYPES.find(t=>t.key===form.transportType)
-      const title = cat.key==='transport'
-        ? `${tt?.icon} ${form.transportFrom||''}${form.transportTo?'→'+form.transportTo:''} (${form.title})`
-        : `${cat.icon} ${form.title}${form.place?' · '+form.place:''}`
+      const itemLabel = form.place || form.title || cat.label
+      const expTitle = cat.key==='transport'
+        ? (tt?.icon||'')+' '+(form.transportFrom||'')+( form.transportTo?'→'+form.transportTo:'')+( form.note?' ('+form.note+')':''  )
+        : cat.icon+' '+itemLabel
+      // 원화 금액: 외화면 krwAmount 사용, 원화면 cost 그대로
+      const finalKRW = form.currency!=='KRW' && form.krwAmount
+        ? Number(form.krwAmount) : Number(form.cost)
       newExpenses.push({
         id: Date.now()+1,
         category: cat.key==='snack'?'food':cat.key==='sightseeing'?'activity':cat.key,
-        title, amount:Number(form.cost),
-        currency:form.currency,
-        exchangeRate:form.currency==='KRW'?1:(Number(form.exchangeRate)||1),
-        paidBy:form.paidBy||trip.members[0]?.id,
-        date:activeDate, fromSchedule:true,
+        title: expTitle.trim(),
+        amount: finalKRW,
+        currency: 'KRW',
+        exchangeRate: 1,
+        originalAmount: Number(form.cost),
+        originalCurrency: form.currency,
+        paidBy: form.paidBy||trip.members[0]?.id,
+        date: activeDate,
+        fromSchedule: true,
       })
     }
     onUpdate({...trip, schedules:[...(trip.schedules||[]),{id:Date.now(),date:activeDate,...form}], expenses:newExpenses})
@@ -320,7 +334,7 @@ export default function ScheduleTab({ trip, onUpdate }) {
                     <div style={{fontSize:11,color:'var(--gray-400)',marginBottom:3}}>{item.time||'시간 미정'}</div>
                     <div className="card" style={{marginBottom:0}}>
                       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:6}}>
-                        <span style={{fontSize:14,fontWeight:600}}>{item.title}</span>
+                        <span style={{fontSize:14,fontWeight:600}}>{item.place || item.title || ic.label}</span>
                         <span style={{fontSize:11,padding:'2px 8px',borderRadius:20,background:ic.bg,color:ic.color,fontWeight:500,whiteSpace:'nowrap',marginLeft:8}}>{ic.icon} {ic.label}</span>
                       </div>
                       {item.category==='transport'&&(item.transportFrom||item.transportTo)&&(
@@ -340,8 +354,10 @@ export default function ScheduleTab({ trip, onUpdate }) {
                         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:6,paddingTop:6,borderTop:'1px solid var(--gray-100)'}}>
                           <span style={{fontSize:11,color:'var(--gray-400)'}}>결제: {payer?.name||'미지정'}</span>
                           <div style={{textAlign:'right'}}>
-                            <div style={{fontSize:13,fontWeight:700,color:'var(--purple)'}}>{cur.flag} {cur.symbol}{Number(item.cost).toLocaleString()}</div>
-                            {item.currency!=='KRW'&&<div style={{fontSize:10,color:'var(--gray-400)'}}>≈ ₩{krw.toLocaleString()}</div>}
+                            {item.originalAmount&&item.originalCurrency&&item.originalCurrency!=='KRW'
+                              ? <><div style={{fontSize:13,fontWeight:700,color:'var(--purple)'}}>{CURRENCIES.find(c=>c.code===item.originalCurrency)?.flag} {CURRENCIES.find(c=>c.code===item.originalCurrency)?.symbol}{Number(item.originalAmount).toLocaleString()}</div><div style={{fontSize:10,color:'var(--gray-400)'}}>₩{Number(item.cost).toLocaleString()}</div></>
+                              : <div style={{fontSize:13,fontWeight:700,color:'var(--purple)'}}>₩{Number(item.cost).toLocaleString()}</div>
+                            }
                           </div>
                         </div>
                       )}
@@ -433,19 +449,17 @@ export default function ScheduleTab({ trip, onUpdate }) {
             {section==='timeline'&&(
               <>
                 <div className="modal-title">일정 추가 — {dates.find(d=>d.key===activeDate)?.label}</div>
-                <div style={{display:'flex',gap:8}}>
-                  <div className="form-group" style={{width:88,flexShrink:0}}>
-                    <label className="form-label">시간</label>
-                    <input className="form-input" type="time" value={form.time} onChange={e=>f({time:e.target.value})} />
-                  </div>
-                                 </div>
+                <div className="form-group" style={{maxWidth:140}}>
+                  <label className="form-label">시간</label>
+                  <input className="form-input" type="time" value={form.time} onChange={e=>f({time:e.target.value})} />
+                </div>
 
                 {/* 카테고리 선택 */}
                 <div className="form-group">
                   <label className="form-label">카테고리</label>
                   <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
                     {CATEGORIES.map(c=>(
-                      <button key={c.key} onClick={()=>f({category:c.key,cost:'',currency:'KRW',exchangeRate:'',place:'',mapQuery:'',transportFrom:'',transportTo:'',transportType:'subway'})}
+                      <button key={c.key} onClick={()=>f({category:c.key,cost:'',currency:'KRW',krwAmount:'',place:'',mapQuery:'',transportFrom:'',transportTo:'',transportType:'subway'})}
                         style={{padding:'6px 11px',borderRadius:20,fontSize:12,fontWeight:500,border:'none',
                           background:form.category===c.key?c.color:'var(--gray-100)',
                           color:form.category===c.key?'#fff':'var(--gray-600)'}}>
@@ -462,7 +476,7 @@ export default function ScheduleTab({ trip, onUpdate }) {
                   <label className="form-label">메모</label>
                   <input className="form-input" placeholder="추가 메모" value={form.note} onChange={e=>f({note:e.target.value})} />
                 </div>
-                <button className="btn-primary" onClick={addSchedule} style={{opacity:form.title?1:.5}}>추가하기</button>
+                <button className="btn-primary" onClick={addSchedule}>추가하기</button>
               </>
             )}
 
