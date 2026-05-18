@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { trips as initialTrips } from './data/sampleData'
+import { useAuth } from './hooks/useAuth'
+import LoginScreen from './pages/LoginScreen'
 import HomeScreen from './pages/HomeScreen'
 import ScheduleTab from './pages/ScheduleTab'
 import BookingTab from './pages/BookingTab'
@@ -24,6 +26,7 @@ const TABS = [
 ]
 
 export default function App() {
+  const { user, logout, loading } = useAuth()
   const [trips, setTrips] = useState(initialTrips)
   const [selectedTrip, setSelectedTrip] = useState(null)
   const [activeTab, setActiveTab] = useState('schedule')
@@ -33,9 +36,26 @@ export default function App() {
   const [appSettings, setAppSettings] = useState({ userName:'나', theme:'purple', currency:'KRW' })
 
   useEffect(() => {
+    if (user) {
+      const name = user.displayName?.split(' ')[0] || '나'
+      setAppSettings(s => ({ ...s, userName: name }))
+    }
+  }, [user])
+
+  useEffect(() => {
     const theme = THEMES[appSettings.theme] || THEMES.purple
     Object.entries(theme).forEach(([k,v]) => document.documentElement.style.setProperty(k, v))
   }, [appSettings.theme])
+
+  if (loading) {
+    return (
+      <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'var(--purple)'}}>
+        <div style={{color:'#fff',fontSize:16}}>로딩 중...</div>
+      </div>
+    )
+  }
+
+  if (!user) return <LoginScreen />
 
   function updateTrip(updated) {
     setTrips(prev => prev.map(t => t.id === updated.id ? updated : t))
@@ -50,7 +70,7 @@ export default function App() {
       ...newTripForm,
       coverColor: colors[Math.floor(Math.random() * colors.length)],
       status: 'upcoming',
-      members: [{ id: 1, name: appSettings.userName || '나', initials: (appSettings.userName||'나').slice(0,1), color: '#EEEDFE', textColor: '#3D35A0' }],
+      members: [{ id: 1, name: user.displayName?.split(' ')[0] || '나', initials: (user.displayName||'나').slice(0,1), color: '#EEEDFE', textColor: '#3D35A0' }],
       schedules: [], bookings: [], expenses: [], notices: [], photos: [],
     }
     setTrips(prev => [newTrip, ...prev])
@@ -69,6 +89,8 @@ export default function App() {
           onUpdateTrips={setTrips}
           appSettings={appSettings}
           onUpdateSettings={setAppSettings}
+          user={user}
+          onLogout={logout}
         />
       </div>
     )

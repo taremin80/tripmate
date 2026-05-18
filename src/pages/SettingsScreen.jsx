@@ -8,7 +8,7 @@ const THEMES = [
   { key:'rose',   label:'로즈', color:'#C2185B' },
 ]
 
-export default function SettingsScreen({ trips, onBack, onUpdateTrips, appSettings, onUpdateSettings }) {
+export default function SettingsScreen({ trips, onBack, onUpdateTrips, appSettings, onUpdateSettings, user, onLogout }) {
   const [tab, setTab] = useState('app')
   const [editTrip, setEditTrip] = useState(null)
   const [memberForm, setMemberForm] = useState({ name:'', initials:'' })
@@ -86,21 +86,25 @@ export default function SettingsScreen({ trips, onBack, onUpdateTrips, appSettin
         {/* 앱 설정 탭 */}
         {tab === 'app' && (
           <>
-            <div className="section-label">내 프로필</div>
+            <div className="section-label">내 계정</div>
             <div className="card">
               <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:14}}>
-                <div style={{width:50,height:50,borderRadius:'50%',background:'var(--purple-light)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,fontWeight:700,color:'var(--purple)'}}>
-                  {(appSettings.userName||'나').slice(0,1)}
-                </div>
+                {user?.photoURL
+                  ? <img src={user.photoURL} alt="프로필" style={{width:50,height:50,borderRadius:'50%',objectFit:'cover'}} />
+                  : <div style={{width:50,height:50,borderRadius:'50%',background:'var(--purple-light)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,fontWeight:700,color:'var(--purple)'}}>{(appSettings.userName||'나').slice(0,1)}</div>
+                }
                 <div style={{flex:1}}>
-                  <div style={{fontSize:15,fontWeight:600}}>{appSettings.userName || '내 이름 설정'}</div>
-                  <div style={{fontSize:11,color:'var(--gray-400)'}}>여행 멤버에서 표시되는 이름</div>
+                  <div style={{fontSize:15,fontWeight:600}}>{user?.displayName || appSettings.userName}</div>
+                  <div style={{fontSize:11,color:'var(--gray-400)'}}>{user?.email}</div>
                 </div>
               </div>
-              <div className="form-group" style={{marginBottom:0}}>
-                <label className="form-label">이름</label>
+              <div className="form-group">
+                <label className="form-label">앱에서 표시할 이름</label>
                 <input className="form-input" placeholder="이름을 입력하세요" value={appSettings.userName||''} onChange={e => onUpdateSettings({...appSettings, userName:e.target.value})} />
               </div>
+              <button onClick={onLogout} style={{width:'100%',padding:'10px',borderRadius:8,background:'var(--red-light)',color:'var(--red)',fontSize:13,fontWeight:500,border:'none',marginTop:4}}>
+                로그아웃
+              </button>
             </div>
 
             <div className="section-label">테마 색상</div>
