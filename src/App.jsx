@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { trips as initialTrips } from './data/sampleData'
 import { useAuth } from './hooks/useAuth'
+import { useTrips } from './hooks/useTrips'
 import LoginScreen from './pages/LoginScreen'
 import HomeScreen from './pages/HomeScreen'
 import ScheduleTab from './pages/ScheduleTab'
@@ -26,8 +26,8 @@ const TABS = [
 ]
 
 export default function App() {
-  const { user, logout, loading } = useAuth()
-  const [trips, setTrips] = useState(initialTrips)
+  const { user, logout, loading: authLoading } = useAuth()
+  const { trips, saveTrip, removeTrip, loading: tripsLoading } = useTrips(user)
   const [selectedTrip, setSelectedTrip] = useState(null)
   const [activeTab, setActiveTab] = useState('schedule')
   const [showNewTrip, setShowNewTrip] = useState(false)
@@ -47,22 +47,31 @@ export default function App() {
     Object.entries(theme).forEach(([k,v]) => document.documentElement.style.setProperty(k, v))
   }, [appSettings.theme])
 
-  if (loading) {
+  // selectedTrip을 trips 변경 시 동기화
+  useEffect(() => {
+    if (selectedTrip) {
+      const updated = trips.find(t => t.id === selectedTrip.id)
+      if (updated) setSelectedTrip(updated)
+    }
+  }, [trips])
+
+  if (authLoading || tripsLoading) {
     return (
-      <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'var(--purple)'}}>
-        <div style={{color:'#fff',fontSize:16}}>로딩 중...</div>
+      <div style={{minHeight:'100vh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',background:'var(--purple)',gap:12}}>
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        <div style={{color:'#fff',fontSize:15,opacity:.8}}>불러오는 중...</div>
       </div>
     )
   }
 
   if (!user) return <LoginScreen />
 
-  function updateTrip(updated) {
-    setTrips(prev => prev.map(t => t.id === updated.id ? updated : t))
+  async function updateTrip(updated) {
+    await saveTrip(updated)
     setSelectedTrip(updated)
   }
 
-  function createTrip() {
+  async function createTrip() {
     if (!newTripForm.title) return
     const colors = ['#5B4FCF','#0F9B8E','#E07B39','#E24B4A','#3A9E6F']
     const newTrip = {
@@ -72,12 +81,27 @@ export default function App() {
       status: 'upcoming',
       members: [{ id: 1, name: user.displayName?.split(' ')[0] || '나', initials: (user.displayName||'나').slice(0,1), color: '#EEEDFE', textColor: '#3D35A0' }],
       schedules: [], bookings: [], expenses: [], notices: [], photos: [],
+      createdAt: Date.now(),
     }
-    setTrips(prev => [newTrip, ...prev])
+    await saveTrip(newTrip)
     setNewTripForm({ title:'', location:'', startDate:'', endDate:'' })
     setShowNewTrip(false)
     setSelectedTrip(newTrip)
     setActiveTab('schedule')
+  }
+
+  async function handleDeleteTrip(tripId) {
+    await removeTrip(tripId)
+    setSelectedTrip(null)
+    setShowSettings(false)
+  }
+
+  async function handleUpdateTrips(updatedTrips) {
+    const origIds = trips.map(t => String(t.id))
+    const newIds = updatedTrips.map(t => String(t.id))
+    const deleted = origIds.filter(id => !newIds.includes(id))
+    for (const id of deleted) await removeTrip(id)
+    for (const trip of updatedTrips) await saveTrip(trip)
   }
 
   if (showSettings) {
@@ -86,7 +110,8 @@ export default function App() {
         <SettingsScreen
           trips={trips}
           onBack={() => setShowSettings(false)}
-          onUpdateTrips={setTrips}
+          onUpdateTrips={handleUpdateTrips}
+          onDeleteTrip={handleDeleteTrip}
           appSettings={appSettings}
           onUpdateSettings={setAppSettings}
           user={user}
