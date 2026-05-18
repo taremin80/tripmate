@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import {
-  collection, doc, setDoc, deleteDoc,
+  collection, doc, setDoc, deleteDoc, getDoc,
   onSnapshot, query, orderBy
 } from 'firebase/firestore'
 import { db } from '../firebase'
@@ -13,27 +13,37 @@ export function useTrips(user) {
   useEffect(() => {
     if (!user) { setTrips([]); setLoading(false); return }
 
-    const q = query(
-      collection(db, 'trips', user.uid, 'list'),
-      orderBy('createdAt', 'desc')
-    )
+    const initAndListen = async () => {
+      // 처음 가입한 사용자인지 확인 (init 플래그)
+      const initRef = doc(db, 'trips', user.uid)
+      const initSnap = await getDoc(initRef)
 
-    const unsub = onSnapshot(q, async (snap) => {
-      if (snap.empty) {
-        // 처음 로그인 시 샘플 데이터 저장
+      if (!initSnap.exists()) {
+        // 최초 1회만 샘플 데이터 저장
+        await setDoc(initRef, { initialized: true, createdAt: Date.now() })
         for (const trip of sampleTrips) {
           await setDoc(
             doc(db, 'trips', user.uid, 'list', String(trip.id)),
             { ...trip, createdAt: Date.now() }
           )
         }
-      } else {
-        setTrips(snap.docs.map(d => d.data()))
       }
-      setLoading(false)
-    })
 
-    return unsub
+      // 실시간 리스닝
+      const q = query(
+        collection(db, 'trips', user.uid, 'list'),
+        orderBy('createdAt', 'desc')
+      )
+      const unsub = onSnapshot(q, (snap) => {
+        setTrips(snap.docs.map(d => d.data()))
+        setLoading(false)
+      })
+      return unsub
+    }
+
+    let unsub
+    initAndListen().then(u => { unsub = u })
+    return () => { if (unsub) unsub() }
   }, [user])
 
   async function saveTrip(trip) {
@@ -49,5 +59,5 @@ export function useTrips(user) {
     await deleteDoc(doc(db, 'trips', user.uid, 'list', String(tripId)))
   }
 
-  return { trips, setTrips, saveTrip, removeTrip, loading }
+  return { trips, saveTrip, removeTrip, loading }
 }
