@@ -155,7 +155,7 @@ export default function ExpenseTab({ trip, onUpdate }) {
                   <div key={item.id} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 0',borderTop:idx>0?'1px solid var(--gray-100)':'none'}}>
                     <div style={{width:32,height:32,borderRadius:8,background:cat.bg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,flexShrink:0}}>{cat.icon}</div>
                     <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontSize:13,fontWeight:500,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item.title}</div>
+                      <div style={{display:'flex',alignItems:'center',gap:5,marginBottom:1}}><div style={{fontSize:13,fontWeight:500,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item.title}</div>{item.fromSchedule && <span style={{fontSize:10,background:'var(--teal-light)',color:'var(--teal)',borderRadius:4,padding:'1px 5px',flexShrink:0}}>일정</span>}</div>
                       <div style={{fontSize:10,color:'var(--gray-400)'}}>결제: {payer?.name || '?'}</div>
                     </div>
                     <div style={{textAlign:'right',flexShrink:0}}>
