@@ -104,8 +104,7 @@ export default function App() {
           onSelect={t => setSelectedTrip(t)}
           onAdd={() => setShowNewTrip(true)}
           onSettings={() => setShowSettings(true)}
-          bgImage={appSettings.heroBg || ''}
-          onSaveBg={url => saveSettings({ heroBg: url })} />
+ />
         {showNewTrip && (
           <div className="modal-overlay" onClick={() => setShowNewTrip(false)}>
             <div className="modal-sheet" onClick={e => e.stopPropagation()}>
