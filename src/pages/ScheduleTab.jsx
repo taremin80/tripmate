@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import EditDeleteMenu from '../components/EditDeleteMenu'
 
 function getDates(startDate, endDate) {
   if (!startDate || !endDate) return []
@@ -214,6 +215,8 @@ export default function ScheduleTab({ trip, onUpdate }) {
   const [section, setSection] = useState('timeline')
   const [activeDate, setActiveDate] = useState(dates[0]?.key||'')
   const [showModal, setShowModal] = useState(false)
+  const [editingId, setEditingId] = useState(null)
+  const [editSection, setEditSection] = useState('timeline')
   const [form, setForm] = useState({...EMPTY_FORM, paidBy:trip.members[0]?.id||null})
   const [transportForm, setTransportForm] = useState(TRANSPORT_EMPTY)
   const [stayForm, setStayForm] = useState(STAY_EMPTY)
@@ -222,6 +225,21 @@ export default function ScheduleTab({ trip, onUpdate }) {
   const filtered = (trip.schedules||[]).filter(s=>s.date?.split('T')[0]===activeDate).sort((a,b)=>(a.time||'').localeCompare(b.time||''))
   const dayTransports = (trip.transports||[]).filter(t=>t.date===activeDate)
   const dayStays = (trip.stays||[]).filter(s=>s.checkIn&&s.checkOut&&s.checkIn<=activeDate&&s.checkOut>=activeDate)
+
+  function openEditSchedule(item) {
+    setEditingId(item.id)
+    setEditSection('timeline')
+    setForm({...EMPTY_FORM, ...item, paidBy: item.paidBy||trip.members[0]?.id||null})
+    setShowModal(true)
+  }
+  function deleteSchedule(id) {
+    onUpdate({...trip, schedules:(trip.schedules||[]).filter(s=>s.id!==id)})
+  }
+  function openAddSchedule() {
+    setEditingId(null)
+    setForm({...EMPTY_FORM, paidBy:trip.members[0]?.id||null})
+    setShowModal(true)
+  }
 
   function addSchedule() {
     if (!form.category) return
@@ -250,7 +268,12 @@ export default function ScheduleTab({ trip, onUpdate }) {
         fromSchedule: true,
       })
     }
-    onUpdate({...trip, schedules:[...(trip.schedules||[]),{id:Date.now(),date:activeDate,...form}], expenses:newExpenses})
+    const newItem = {id:editingId||Date.now(),date:activeDate,...form}
+    const schedules = editingId
+      ? (trip.schedules||[]).map(s=>s.id===editingId?newItem:s)
+      : [...(trip.schedules||[]),newItem]
+    onUpdate({...trip, schedules, expenses:newExpenses})
+    setEditingId(null)
     setForm({...EMPTY_FORM, paidBy:trip.members[0]?.id||null})
     setShowModal(false)
   }
@@ -400,6 +423,9 @@ export default function ScheduleTab({ trip, onUpdate }) {
                     </div>
                   </div>
                   {t.note&&<div style={{fontSize:11,color:'var(--gray-600)',marginTop:8}}>{t.note}</div>}
+                  <div style={{display:'flex',justifyContent:'flex-end',marginTop:6}}>
+                    <EditDeleteMenu onEdit={()=>{}} onDelete={()=>onUpdate({...trip,transports:(trip.transports||[]).filter(x=>x.id!==t.id)})}/>
+                  </div>
                 </div>
               )
             })}
@@ -431,6 +457,9 @@ export default function ScheduleTab({ trip, onUpdate }) {
                 </div>
                 {s.confirmNo&&<div style={{marginTop:8,padding:'7px 10px',background:'var(--purple-light)',borderRadius:8,fontSize:12,color:'var(--purple)'}}>예약번호: <strong>{s.confirmNo}</strong></div>}
                 {s.note&&<div style={{fontSize:11,color:'var(--gray-600)',marginTop:8}}>{s.note}</div>}
+                <div style={{display:'flex',justifyContent:'flex-end',marginTop:6}}>
+                  <EditDeleteMenu onEdit={()=>{}} onDelete={()=>onUpdate({...trip,stays:(trip.stays||[]).filter(x=>x.id!==s.id)})}/>
+                </div>
               </div>
             ))}
             <button onClick={()=>setShowModal(true)} style={{width:'100%',padding:'11px',borderRadius:10,border:'1.5px dashed var(--gray-200)',background:'transparent',color:'var(--gray-400)',fontSize:12,display:'flex',alignItems:'center',justifyContent:'center',gap:4,marginTop:4}}>
@@ -448,7 +477,7 @@ export default function ScheduleTab({ trip, onUpdate }) {
             {/* 일정 모달 */}
             {section==='timeline'&&(
               <>
-                <div className="modal-title">일정 추가 — {dates.find(d=>d.key===activeDate)?.label}</div>
+                <div className="modal-title">{editingId?'일정 수정':'일정 추가'} — {dates.find(d=>d.key===activeDate)?.label}</div>
                 <div className="form-group" style={{maxWidth:140}}>
                   <label className="form-label">시간</label>
                   <input className="form-input" type="time" value={form.time} onChange={e=>f({time:e.target.value})} />
@@ -476,7 +505,7 @@ export default function ScheduleTab({ trip, onUpdate }) {
                   <label className="form-label">메모</label>
                   <input className="form-input" placeholder="추가 메모" value={form.note} onChange={e=>f({note:e.target.value})} />
                 </div>
-                <button className="btn-primary" onClick={addSchedule}>추가하기</button>
+                <button className="btn-primary" onClick={addSchedule}>{editingId?'수정 완료':'추가하기'}</button>
               </>
             )}
 

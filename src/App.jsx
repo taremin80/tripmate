@@ -8,6 +8,7 @@ import BookingTab from './pages/BookingTab'
 import ExpenseTab from './pages/ExpenseTab'
 import { PhotoTab, NoticeTab } from './pages/OtherTabs'
 import SettingsScreen from './pages/SettingsScreen'
+import { useAppSettings } from './hooks/useAppSettings'
 
 const THEMES = {
   purple: { '--purple':'#5B4FCF', '--purple-light':'#EEF0FF', '--purple-dark':'#3D35A0' },
@@ -33,12 +34,12 @@ export default function App() {
   const [showNewTrip, setShowNewTrip] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [newTripForm, setNewTripForm] = useState({ title:'', location:'', startDate:'', endDate:'' })
-  const [appSettings, setAppSettings] = useState({ userName:'나', theme:'purple', currency:'KRW' })
+  const { settings: appSettings, saveSettings } = useAppSettings(user)
 
   useEffect(() => {
     if (user) {
       const name = user.displayName?.split(' ')[0] || '나'
-      setAppSettings(s => ({ ...s, userName: name }))
+      saveSettings({ userName: name })
     }
   }, [user])
 
@@ -113,7 +114,7 @@ export default function App() {
           onUpdateTrips={handleUpdateTrips}
           onDeleteTrip={handleDeleteTrip}
           appSettings={appSettings}
-          onUpdateSettings={setAppSettings}
+          onUpdateSettings={saveSettings}
           user={user}
           onLogout={logout}
         />
@@ -129,6 +130,8 @@ export default function App() {
           onSelect={t => { setSelectedTrip(t); setActiveTab('schedule') }}
           onAdd={() => setShowNewTrip(true)}
           onSettings={() => setShowSettings(true)}
+          bgImage={appSettings.heroBg || ''}
+          onSaveBg={url => saveSettings({ heroBg: url })}
         />
         {showNewTrip && (
           <div className="modal-overlay" onClick={() => setShowNewTrip(false)}>

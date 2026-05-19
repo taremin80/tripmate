@@ -29,19 +29,17 @@ function getEffectiveStatus(trip) {
   return 'upcoming'
 }
 
-export default function HomeScreen({ trips, onSelect, onAdd, onSettings }) {
+export default function HomeScreen({ trips, onSelect, onAdd, onSettings, bgImage, onSaveBg }) {
   const upcoming = trips.filter(t => getEffectiveStatus(t) === 'upcoming')
   const done = trips.filter(t => getEffectiveStatus(t) === 'done')
   const totalExpenseAll = trips.reduce((s, t) => s + t.expenses.reduce((a, e) => a + e.amount, 0), 0)
 
-  const [bgImage, setBgImage] = useState(() => localStorage.getItem('tripmate_hero_bg') || DEFAULT_BG)
   const [showBgModal, setShowBgModal] = useState(false)
   const [bgUrl, setBgUrl] = useState('')
   const fileInputRef = useRef(null)
 
   function applyBg(url) {
-    setBgImage(url)
-    localStorage.setItem('tripmate_hero_bg', url)
+    onSaveBg(url)
     setShowBgModal(false)
     setBgUrl('')
   }
@@ -55,8 +53,7 @@ export default function HomeScreen({ trips, onSelect, onAdd, onSettings }) {
   }
 
   function removeBg() {
-    setBgImage('')
-    localStorage.removeItem('tripmate_hero_bg')
+    onSaveBg('')
     setShowBgModal(false)
   }
 
